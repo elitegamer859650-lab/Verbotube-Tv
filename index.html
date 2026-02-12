@@ -2,108 +2,85 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>VerboTube TV - Live Environment</title>
+    <title>VerboTube TV Live</title>
     <style>
         body, html { margin: 0; padding: 0; background: #000; overflow: hidden; width: 100%; height: 100%; }
-        
-        /* Video wrapper to handle scale/crop */
         .video-wrapper { position: relative; width: 100vw; height: 100vh; overflow: hidden; }
+        #player { transform: scale(1.15); transform-origin: center; width: 100%; height: 100%; }
         
-        /* YouTube Player - Scale hidden logos at edges */
-        #player { transform: scale(1.12); transform-origin: center; width: 100%; height: 100%; }
-
-        /* 🌙 LEFT SIDE LOGO MASK (For Shan-e-Ramzan Video) */
+        /* 🌙 Left Side Logo Mask (Shan-e-Ramzan Video ke liye) */
         #left-mask { 
-            position: absolute; 
-            top: 25px; left: 35px; 
-            width: 200px; height: 110px; 
+            position: absolute; top: 25px; left: 35px; 
+            width: 210px; height: 115px; 
             background: #000; z-index: 200; 
-            display: none; border-radius: 8px;
-            box-shadow: 0 0 30px rgba(0,0,0,1);
+            display: none; border-radius: 8px; 
         }
 
-        /* VerboTube Branding */
         .verbo-logo { 
             position: absolute; top: 40px; right: 50px; 
             z-index: 201; color: #ff0000; 
             font-family: 'Arial Black', sans-serif; font-size: 30px; 
             text-shadow: 3px 3px 6px #000;
         }
-
-        #splash { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 999; display: flex; flex-direction: column; justify-content: center; align-items: center; color: white; font-family: sans-serif; }
-        .start-btn { padding: 20px 40px; background: red; color: white; border: none; cursor: pointer; border-radius: 50px; font-weight: bold; font-size: 20px; }
     </style>
 </head>
 <body>
-
-    <div id="splash">
-        <h1 style="letter-spacing: 5px;">VERBOTUBE TV</h1>
-        <p>Environment Ready</p>
-        <button class="start-btn" onclick="startTV()">START BROADCAST</button>
-    </div>
-
     <div class="video-wrapper">
         <div id="player"></div>
         <div id="left-mask"></div> 
         <div class="verbo-logo">VerboTube <span style="color:white">LIVE</span></div>
     </div>
 
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <script src="https://www.youtube.com/iframe_api"></script>
+
     <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyA8CjkoY0ygW4lhpTn_-BKOI9DjHqqFXBs",
+            authDomain: "heroflix-d64ac.firebaseapp.com",
+            databaseURL: "https://heroflix-d64ac-default-rtdb.firebaseio.com",
+            projectId: "heroflix-d64ac",
+            storageBucket: "heroflix-d64ac.firebasestorage.app",
+            messagingSenderId: "451233952566",
+            appId: "1:451233952566:web:1ecd9f7066d5e7cab77997"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database().ref("live_status");
+
         let player;
-        let localVersion = -1;
-        const bumperID = 'rUcu5SL_I1k'; // Shan-e-Ramzan Video
+        const bumperID = 'rUcu5SL_I1k'; 
 
         function onYouTubeIframeAPIReady() {
             player = new YT.Player('player', {
                 height: '100%', width: '100%',
                 videoId: '', 
-                playerVars: { 'autoplay': 1, 'controls': 0, 'rel': 0, 'showinfo': 0, 'mute': 1 },
-                events: { 'onReady': onPlayerReady }
+                playerVars: { 'autoplay': 1, 'controls': 0, 'mute': 1, 'rel': 0 },
+                events: { 'onReady': () => {
+                    // Firebase listener: Jab bhi data badlega, video khud change hogi
+                    db.on('value', (snapshot) => {
+                        const data = snapshot.val();
+                        if(data) switchContent(data);
+                    });
+                }}
             });
         }
 
-        function onPlayerReady() {
-            // Har 5 second baad Admin se update lega
-            setInterval(syncWithAdmin, 5000);
+        function switchContent(data) {
+            if (data.type === "drama") {
+                document.getElementById('left-mask').style.display = 'block';
+                player.loadVideoById(bumperID);
+                setTimeout(() => {
+                    document.getElementById('left-mask').style.display = 'none';
+                    player.loadVideoById(data.url);
+                }, 27000);
+            } else {
+                player.loadVideoById(data.url);
+            }
         }
 
-        async function syncWithAdmin() {
-            try {
-                const response = await fetch('/api/stream');
-                const data = await response.json();
-
-                // Agar naya video version aya hai
-                if (data.current_version > localVersion) {
-                    localVersion = data.current_version;
-                    const latest = data.playlist[data.playlist.length - 1];
-                    
-                    if (latest.mask === 'top-right' || latest.mask === 'top-left' || latest.mask === 'drama') {
-                        playWithBumper(latest.url);
-                    } else {
-                        player.loadVideoById(latest.url);
-                    }
-                }
-            } catch (err) { console.log("Sync error..."); }
-        }
-
-        function startTV() {
-            document.getElementById('splash').style.display = 'none';
-            player.unMute();
-            syncWithAdmin(); // Pehli video uthao
-        }
-
-        function playWithBumper(videoID) {
-            // 1. Show Mask and Play Bumper
-            document.getElementById('left-mask').style.display = 'block';
-            player.loadVideoById(bumperID);
-
-            // 2. Wait 27s then play Drama
-            setTimeout(() => {
-                document.getElementById('left-mask').style.display = 'none';
-                player.loadVideoById(videoID);
-            }, 27000);
-        }
+        // Remote Interaction to unmute
+        window.addEventListener('keydown', () => { player.unMute(); });
     </script>
 </body>
 </html>
