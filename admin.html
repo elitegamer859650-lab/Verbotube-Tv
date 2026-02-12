@@ -3,46 +3,46 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VerboTube TV | Control Room</title>
+    <title>VerboTube Admin</title>
     <style>
-        body { font-family: 'Segoe UI', sans-serif; background: #0c0c0c; color: #fff; margin: 0; display: flex; justify-content: center; align-items: center; height: 100vh; }
-        .dashboard { background: #1a1a1a; padding: 30px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); width: 90%; max-width: 500px; text-align: center; border: 1px solid #333; }
-        h1 { color: #ff0000; margin-bottom: 20px; font-size: 24px; text-transform: uppercase; letter-spacing: 2px; }
-        .status-box { background: #252525; padding: 15px; border-radius: 8px; margin-bottom: 25px; border-left: 5px solid #ff0000; text-align: left; }
-        input, select { width: 100%; padding: 12px; margin: 10px 0; border-radius: 5px; border: 1px solid #444; background: #000; color: #fff; box-sizing: border-box; }
-        button { width: 100%; padding: 15px; background: #ff0000; color: white; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; transition: 0.3s; font-size: 16px; margin-top: 10px; }
-        button:hover { background: #cc0000; transform: translateY(-2px); }
-        .footer { margin-top: 20px; font-size: 12px; color: #666; }
+        body { font-family: sans-serif; background: #111; color: #fff; display: flex; justify-content: center; align-items: center; height: 100vh; margin:0; }
+        .card { background: #222; padding: 30px; border-radius: 15px; width: 350px; border: 1px solid #333; text-align: center; }
+        input, select, button { width: 100%; padding: 12px; margin: 10px 0; border-radius: 8px; border: none; box-sizing: border-box; }
+        input { background: #000; color: #0f0; border: 1px solid #444; }
+        button { background: #ff0000; color: #fff; font-weight: bold; cursor: pointer; }
     </style>
 </head>
 <body>
-
-<div class="dashboard">
-    <h1>VerboTube TV</h1>
-    
-    <div class="status-box">
-        <small style="color: #888;">Live Status:</small><br>
-        <strong>Current ID:</strong> <span id="current-id">{{ current_id }}</span><br>
-        <strong>Type:</strong> <span id="current-type">{{ current_type }}</span>
-    </div>
-
-    <form action="/update" method="post">
-        <label>YouTube Video URL / ID</label>
-        <input type="text" name="url" placeholder="https://www.youtube.com/watch?v=..." required>
-        
-        <label>Transmission Type</label>
-        <select name="type">
-            <option value="drama">Drama (With Bumper & Mask)</option>
-            <option value="ad">Direct Ad (No Bumper)</option>
+    <div class="card">
+        <h2>TV CONTROL ROOM</h2>
+        <input type="text" id="ytUrl" placeholder="YouTube URL or ID">
+        <select id="vType">
+            <option value="drama">Drama (With Bumper)</option>
+            <option value="ad">Direct (No Bumper)</option>
         </select>
-        
-        <button type="submit">🚀 PUSH TO SMART TV</button>
-    </form>
-
-    <div class="footer">
-        VerboTube Environment v2.0 | Ghost Developer Edition
+        <button onclick="send()">PUSH TO TV 🚀</button>
+        <p id="status"></p>
     </div>
-</div>
 
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+
+    <script>
+        firebase.initializeApp({
+            databaseURL: "https://heroflix-d64ac-default-rtdb.firebaseio.com"
+        });
+        const db = firebase.database().ref("live_status");
+
+        function send() {
+            let val = document.getElementById('ytUrl').value;
+            let type = document.getElementById('vType').value;
+            let id = val.includes('v=') ? val.split('v=')[1].split('&')[0] : val;
+
+            db.set({ url: id, type: type, time: Date.now() }).then(() => {
+                document.getElementById('status').innerText = "Updated Successfully!";
+                setTimeout(() => document.getElementById('status').innerText = "", 2000);
+            });
+        }
+    </script>
 </body>
 </html>
