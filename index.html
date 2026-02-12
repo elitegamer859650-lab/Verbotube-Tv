@@ -2,49 +2,44 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>VerboTube TV - Ramzan Edition</title>
+    <title>VerboTube TV - Live Environment</title>
     <style>
         body, html { margin: 0; padding: 0; background: #000; overflow: hidden; width: 100%; height: 100%; }
         
-        /* Main Video Player */
+        /* Video wrapper to handle scale/crop */
         .video-wrapper { position: relative; width: 100vw; height: 100vh; overflow: hidden; }
-        #player { transform: scale(1.1); transform-origin: center; width: 100%; height: 100%; }
+        
+        /* YouTube Player - Scale hidden logos at edges */
+        #player { transform: scale(1.12); transform-origin: center; width: 100%; height: 100%; }
 
         /* 🌙 LEFT SIDE LOGO MASK (For Shan-e-Ramzan Video) */
         #left-mask { 
             position: absolute; 
-            top: 30px; 
-            left: 40px; 
-            width: 180px; 
-            height: 100px; 
-            background: #000; 
-            z-index: 200; 
-            display: none; /* Sirf bumper ke waqt show hoga */
-            border-radius: 8px;
-            box-shadow: 0 0 20px rgba(0,0,0,0.8);
+            top: 25px; left: 35px; 
+            width: 200px; height: 110px; 
+            background: #000; z-index: 200; 
+            display: none; border-radius: 8px;
+            box-shadow: 0 0 30px rgba(0,0,0,1);
         }
 
-        /* VerboTube Branding on Top Right */
+        /* VerboTube Branding */
         .verbo-logo { 
-            position: absolute; 
-            top: 40px; 
-            right: 50px; 
-            z-index: 201; 
-            color: #ff0000; 
-            font-family: Arial, sans-serif; 
-            font-size: 28px; 
-            font-weight: bold; 
-            text-shadow: 2px 2px 5px #000;
+            position: absolute; top: 40px; right: 50px; 
+            z-index: 201; color: #ff0000; 
+            font-family: 'Arial Black', sans-serif; font-size: 30px; 
+            text-shadow: 3px 3px 6px #000;
         }
 
-        #splash { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 999; display: flex; flex-direction: column; justify-content: center; align-items: center; color: white; }
+        #splash { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 999; display: flex; flex-direction: column; justify-content: center; align-items: center; color: white; font-family: sans-serif; }
+        .start-btn { padding: 20px 40px; background: red; color: white; border: none; cursor: pointer; border-radius: 50px; font-weight: bold; font-size: 20px; }
     </style>
 </head>
 <body>
 
     <div id="splash">
-        <h1 style="font-family: Arial;">VERBOTUBE TV</h1>
-        <button onclick="startTV()" style="padding: 15px 30px; background: red; color: white; border: none; cursor: pointer; border-radius: 5px;">START BROADCAST</button>
+        <h1 style="letter-spacing: 5px;">VERBOTUBE TV</h1>
+        <p>Environment Ready</p>
+        <button class="start-btn" onclick="startTV()">START BROADCAST</button>
     </div>
 
     <div class="video-wrapper">
@@ -56,36 +51,58 @@
     <script src="https://www.youtube.com/iframe_api"></script>
     <script>
         let player;
-        const bumperID = 'rUcu5SL_I1k'; // Aapki di hui Ramzan video
+        let localVersion = -1;
+        const bumperID = 'rUcu5SL_I1k'; // Shan-e-Ramzan Video
 
         function onYouTubeIframeAPIReady() {
             player = new YT.Player('player', {
                 height: '100%', width: '100%',
                 videoId: '', 
-                playerVars: { 'autoplay': 1, 'controls': 0, 'rel': 0, 'mute': 1 },
-                events: { 'onStateChange': onPlayerStateChange }
+                playerVars: { 'autoplay': 1, 'controls': 0, 'rel': 0, 'showinfo': 0, 'mute': 1 },
+                events: { 'onReady': onPlayerReady }
             });
+        }
+
+        function onPlayerReady() {
+            // Har 5 second baad Admin se update lega
+            setInterval(syncWithAdmin, 5000);
+        }
+
+        async function syncWithAdmin() {
+            try {
+                const response = await fetch('/api/stream');
+                const data = await response.json();
+
+                // Agar naya video version aya hai
+                if (data.current_version > localVersion) {
+                    localVersion = data.current_version;
+                    const latest = data.playlist[data.playlist.length - 1];
+                    
+                    if (latest.mask === 'top-right' || latest.mask === 'top-left' || latest.mask === 'drama') {
+                        playWithBumper(latest.url);
+                    } else {
+                        player.loadVideoById(latest.url);
+                    }
+                }
+            } catch (err) { console.log("Sync error..."); }
         }
 
         function startTV() {
             document.getElementById('splash').style.display = 'none';
-            playProgram('dQw4w9WgXcQ'); // Example Drama ID
+            player.unMute();
+            syncWithAdmin(); // Pehli video uthao
         }
 
-        function playProgram(videoID) {
-            // 1. Pehle Bumper chalao aur Mask dikhao
+        function playWithBumper(videoID) {
+            // 1. Show Mask and Play Bumper
             document.getElementById('left-mask').style.display = 'block';
             player.loadVideoById(bumperID);
 
-            // 2. 27 seconds (Bumper length) ke baad asli video
+            // 2. Wait 27s then play Drama
             setTimeout(() => {
-                document.getElementById('left-mask').style.display = 'none'; // Mask hata do
+                document.getElementById('left-mask').style.display = 'none';
                 player.loadVideoById(videoID);
             }, 27000);
-        }
-
-        function onPlayerStateChange(event) {
-            // Logic for next videos...
         }
     </script>
 </body>
