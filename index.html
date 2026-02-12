@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>VerboTube TV - Ramzan Edition</title>
+    <style>
+        body, html { margin: 0; padding: 0; background: #000; overflow: hidden; width: 100%; height: 100%; }
+        
+        /* Main Video Player */
+        .video-wrapper { position: relative; width: 100vw; height: 100vh; overflow: hidden; }
+        #player { transform: scale(1.1); transform-origin: center; width: 100%; height: 100%; }
+
+        /* 🌙 LEFT SIDE LOGO MASK (For Shan-e-Ramzan Video) */
+        #left-mask { 
+            position: absolute; 
+            top: 30px; 
+            left: 40px; 
+            width: 180px; 
+            height: 100px; 
+            background: #000; 
+            z-index: 200; 
+            display: none; /* Sirf bumper ke waqt show hoga */
+            border-radius: 8px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.8);
+        }
+
+        /* VerboTube Branding on Top Right */
+        .verbo-logo { 
+            position: absolute; 
+            top: 40px; 
+            right: 50px; 
+            z-index: 201; 
+            color: #ff0000; 
+            font-family: Arial, sans-serif; 
+            font-size: 28px; 
+            font-weight: bold; 
+            text-shadow: 2px 2px 5px #000;
+        }
+
+        #splash { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 999; display: flex; flex-direction: column; justify-content: center; align-items: center; color: white; }
+    </style>
+</head>
+<body>
+
+    <div id="splash">
+        <h1 style="font-family: Arial;">VERBOTUBE TV</h1>
+        <button onclick="startTV()" style="padding: 15px 30px; background: red; color: white; border: none; cursor: pointer; border-radius: 5px;">START BROADCAST</button>
+    </div>
+
+    <div class="video-wrapper">
+        <div id="player"></div>
+        <div id="left-mask"></div> 
+        <div class="verbo-logo">VerboTube <span style="color:white">LIVE</span></div>
+    </div>
+
+    <script src="https://www.youtube.com/iframe_api"></script>
+    <script>
+        let player;
+        const bumperID = 'rUcu5SL_I1k'; // Aapki di hui Ramzan video
+
+        function onYouTubeIframeAPIReady() {
+            player = new YT.Player('player', {
+                height: '100%', width: '100%',
+                videoId: '', 
+                playerVars: { 'autoplay': 1, 'controls': 0, 'rel': 0, 'mute': 1 },
+                events: { 'onStateChange': onPlayerStateChange }
+            });
+        }
+
+        function startTV() {
+            document.getElementById('splash').style.display = 'none';
+            playProgram('dQw4w9WgXcQ'); // Example Drama ID
+        }
+
+        function playProgram(videoID) {
+            // 1. Pehle Bumper chalao aur Mask dikhao
+            document.getElementById('left-mask').style.display = 'block';
+            player.loadVideoById(bumperID);
+
+            // 2. 27 seconds (Bumper length) ke baad asli video
+            setTimeout(() => {
+                document.getElementById('left-mask').style.display = 'none'; // Mask hata do
+                player.loadVideoById(videoID);
+            }, 27000);
+        }
+
+        function onPlayerStateChange(event) {
+            // Logic for next videos...
+        }
+    </script>
+</body>
+</html>
